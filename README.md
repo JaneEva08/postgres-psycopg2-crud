@@ -1,22 +1,24 @@
-# PostgreSQL CRUD-драйвер на psycopg2
+[🇷🇺 Русский](README.ru.md) | 🇬🇧 English
 
-Лёгкий драйвер для PostgreSQL поверх `psycopg2` — без ORM, только чистый SQL,
-параметризованные запросы и явные транзакции. Полезен, когда нужно быстро
-подключиться к базе, выполнить CRUD-операции и получить агрегированную
-выборку, не таща в проект тяжёлый ORM ради пары запросов.
+# PostgreSQL CRUD Driver on psycopg2
 
-На примере двух связанных таблиц (`users` и `orders`) показано, как:
-подключаться к базе через `.env`, безопасно вставлять данные, атомарно
-объединять несколько операций в одну транзакцию и считать сумму заказов на
-пользователя через `LEFT JOIN`.
+A lightweight PostgreSQL driver built on top of `psycopg2` — no ORM, just
+plain SQL, parameterized queries, and explicit transactions. Useful when you
+need to connect to a database, run CRUD operations, and get an aggregated
+result without pulling a heavy ORM into the project for a couple of queries.
 
-## Что нужно заранее
+Using two related tables (`users` and `orders`) as an example, it shows how
+to: connect via `.env`, insert data safely, atomically group several
+operations into one transaction, and calculate per-user order totals with a
+`LEFT JOIN`.
 
-- Установленный и запущенный PostgreSQL (локально или удалённо).
-- В pgAdmin (или psql) создана база данных `test` (схема `public` — используется
-  по умолчанию, отдельно создавать не нужно).
+## Prerequisites
 
-## Установка
+- PostgreSQL installed and running (local or remote).
+- A `test` database created in pgAdmin (or psql) — the default `public`
+  schema is used, no need to create one separately.
+
+## Installation
 
 ```powershell
 python -m venv venv
@@ -24,9 +26,9 @@ venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-## Настройка
+## Configuration
 
-Скопировать `.env.example` в `.env` и подставить свои данные:
+Copy `.env.example` to `.env` and fill in your values:
 
 ```
 DB_HOST=localhost
@@ -36,48 +38,48 @@ DB_USER=postgres
 DB_PASSWORD=...
 ```
 
-## Запуск
+## Running
 
 ```powershell
 python main.py
 ```
 
-При первом запуске скрипт сам создаст таблицы `users` и `orders`
-(`CREATE TABLE IF NOT EXISTS`) и, если `users` пустая, одной транзакцией
-заполнит её тестовыми пользователями и заказами. При повторных запусках
-данные не дублируются.
+On first run the script creates the `users` and `orders` tables
+(`CREATE TABLE IF NOT EXISTS`) and, if `users` is empty, seeds it with test
+users and orders in a single transaction. Data won't be duplicated on
+subsequent runs.
 
-## Что делает main.py
+## What main.py does
 
-1. Читает и печатает всех пользователей (`SELECT * FROM users`).
-2. Считает сумму заказов на пользователя через `LEFT JOIN` + `SUM` +
-   `GROUP BY`, сортирует по убыванию суммы, печатает в формате
-   `Имя — Сумма`.
-3. Ошибки `psycopg2.Error` и любые неожиданные исключения перехватываются,
-   соединение закрывается в любом случае (через контекстный менеджер
-   `with PostgresDriver() as db`).
+1. Reads and prints all users (`SELECT * FROM users`).
+2. Calculates per-user order totals via `LEFT JOIN` + `SUM` + `GROUP BY`,
+   sorted by total descending, printed as `Name — Total`.
+3. Both `psycopg2.Error` and any unexpected exceptions are caught, and the
+   connection is always closed (via the `with PostgresDriver() as db`
+   context manager).
 
-## Кириллица в консоли Windows
+## Cyrillic output in the Windows console
 
-Если вместо русских заголовков в терминале видно кракозябры — это несовпадение
-кодировки консоли с UTF-8, в котором Python печатает текст. На данные это не
-влияет. Чтобы исправить отображение, перед запуском выполните:
+If the console shows garbled characters instead of Russian text, it's a
+console/UTF-8 encoding mismatch — it doesn't affect the data. Fix the
+display by running this before launching the script:
 
 ```powershell
 chcp 65001
 ```
 
-## Проверка ON DELETE CASCADE
+## Verifying ON DELETE CASCADE
 
-Чтобы убедиться, что связь `orders.user_id → users.id` настроена с каскадным
-удалением: удалите в pgAdmin пользователя, у которого есть заказы, и
-убедитесь, что его заказы исчезли автоматически.
+To confirm that the `orders.user_id → users.id` relationship cascades on
+delete: remove a user with existing orders in pgAdmin and check that their
+orders disappear automatically.
 
-## Структура
+## Structure
 
-- `main.py` — точка входа, демонстрация работы драйвера.
-- `postgres_driver.py` — драйвер: `create_tables`, `add_user`, `add_order`,
-  `has_users`, `get_all_users`, `get_user_totals`, `transaction` (контекстный
-  менеджер для нескольких операций в одной атомарной транзакции).
-- `requirements.txt` — зависимости (`psycopg2-binary`, `python-dotenv`).
-- `.env.example` — образец переменных окружения (без секретов).
+- `main.py` — entry point, demonstrates how the driver is used.
+- `postgres_driver.py` — the driver: `create_tables`, `add_user`,
+  `add_order`, `has_users`, `get_all_users`, `get_user_totals`,
+  `transaction` (a context manager for grouping several operations into one
+  atomic transaction).
+- `requirements.txt` — dependencies (`psycopg2-binary`, `python-dotenv`).
+- `.env.example` — sample environment variables (no secrets).
